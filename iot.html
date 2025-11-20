@@ -451,7 +451,7 @@
             <div class="status" id="tempStatus">Chờ hơi ấm từ đất mẹ... <span class="sticker">🔥</span></div>
         </div>
         <div class="card" id="humidityCard">
-            <div class="icon"><i class="fas fa-tint-drop"></i></div>
+            <div class="icon"><i class="fas fa-tint"></i></div>
             <h3>Độ Ẩm</h3>
             <div class="value" id="humidityValue">-- %</div>
             <div class="status" id="humidityStatus">Chờ giọt sương mai... <span class="sticker">💧</span></div>
@@ -462,6 +462,23 @@
             <div class="value" id="luxValue">-- lx</div>
             <div class="status" id="luxStatus">Chờ tia nắng xuyên lá... <span class="sticker">☀️</span></div>
         </div>
+
+        <!-- MQ135 card -->
+        <div class="card" id="mqCard">
+            <div class="icon"><i class="fas fa-smog"></i></div>
+            <h3>Chất Lượng Không Khí (MQ135)</h3>
+            <div class="value" id="mqValue">-- V</div>
+            <div class="status" id="mqStatus">Chờ làn gió mới... <span class="sticker">💨</span></div>
+        </div>
+
+        <!-- UV card -->
+        <div class="card" id="uvCard">
+            <div class="icon"><i class="fas fa-sun-plant"></i></div>
+            <h3>Tia UV</h3>
+            <div class="value" id="uvValue">-- V</div>
+            <div class="status" id="uvStatus">Chờ tia nắng dịu nhẹ... <span class="sticker">🌈</span></div>
+        </div>
+
         <div class="card" id="alertCard">
             <div class="icon"><i class="fas fa-leaf"></i></div>
             <h3>Trạng Thái</h3>
@@ -484,6 +501,8 @@
                         <th>Nhiệt (°C)</th>
                         <th>Ẩm (%)</th>
                         <th>Ánh Sáng (lx)</th>
+                        <th>MQ135 (V)</th>
+                        <th>UV (V)</th>
                     </tr>
                 </thead>
                 <tbody id="logBody"></tbody>
@@ -582,54 +601,151 @@
             }
         });
 
+        // === HÀM UPDATE DASHBOARD CÓ RULE CẢNH BÁO CHI TIẾT ===
         function updateDashboard(data) {
             const now = new Date().toLocaleTimeString('vi-VN');
-            document.getElementById('tempValue').textContent = data.tempC + ' °C';
-            document.getElementById('humidityValue').textContent = data.humidity + ' %';
-            document.getElementById('luxValue').textContent = Math.round(data.lux) + ' lx';
-            document.getElementById('tempStatus').innerHTML = 'Cập nhật: ' + now + ' <span class="sticker">📅</span>';
-            document.getElementById('humidityStatus').innerHTML = 'Cập nhật: ' + now + ' <span class="sticker">📅</span>';
-            document.getElementById('luxStatus').innerHTML = 'Cập nhật: ' + now + ' <span class="sticker">📅</span>';
 
-            document.getElementById('alertCard').classList.remove('alert', 'warning');
-            document.getElementById('alertValue').innerHTML = 'Hài Hòa <span class="sticker">🌈</span>';
-            document.getElementById('alertStatus').innerHTML = 'Rừng xanh đang hát... <span class="sticker">🎶</span>';
+            const temp = parseFloat(data.tempC);
+            const hum  = parseFloat(data.humidity);
+            const lux  = parseFloat(data.lux);
+            const mqV  = parseFloat(data.mq135_v);
+            const uvV  = parseFloat(data.uv_v);
 
+            // Giá trị chính
+            document.getElementById('tempValue').textContent =
+                isNaN(temp) ? '-- °C' : temp.toFixed(1) + ' °C';
+            document.getElementById('humidityValue').textContent =
+                isNaN(hum) ? '-- %' : hum.toFixed(0) + ' %';
+            document.getElementById('luxValue').textContent =
+                isNaN(lux) ? '-- lx' : Math.round(lux) + ' lx';
+
+            document.getElementById('tempStatus').innerHTML =
+                'Cập nhật: ' + now + ' <span class="sticker">📅</span>';
+            document.getElementById('humidityStatus').innerHTML =
+                'Cập nhật: ' + now + ' <span class="sticker">📅</span>';
+            document.getElementById('luxStatus').innerHTML =
+                'Cập nhật: ' + now + ' <span class="sticker">📅</span>';
+
+            // MQ & UV value
+            document.getElementById('mqValue').textContent =
+                isNaN(mqV) ? '-- V' : mqV.toFixed(2) + ' V';
+            document.getElementById('uvValue').textContent =
+                isNaN(uvV) ? '-- V' : uvV.toFixed(2) + ' V';
+
+            // MQ status
+            if (!isNaN(mqV)) {
+                if (mqV < 0.6) {
+                    document.getElementById('mqStatus').innerHTML =
+                        'Không khí rất trong lành 🌿 <span class="sticker">😊</span>';
+                } else if (mqV < 1.5) {
+                    document.getElementById('mqStatus').innerHTML =
+                        'Không khí hơi có bụi mịn, vẫn chấp nhận được. <span class="sticker">😌</span>';
+                } else {
+                    document.getElementById('mqStatus').innerHTML =
+                        'Không khí ô nhiễm, nên hạn chế hoạt động mạnh ngoài trời! <span class="sticker">😷</span>';
+                }
+            } else {
+                document.getElementById('mqStatus').innerHTML =
+                    'Chờ làn gió mới... <span class="sticker">💨</span>';
+            }
+
+            // UV status
+            if (!isNaN(uvV)) {
+                if (uvV < 0.3) {
+                    document.getElementById('uvStatus').innerHTML =
+                        'UV thấp, rất an toàn cho da. <span class="sticker">🧴</span>';
+                } else if (uvV < 0.7) {
+                    document.getElementById('uvStatus').innerHTML =
+                        'UV trung bình, nên dùng kem chống nắng nếu ở lâu ngoài trời. <span class="sticker">😎</span>';
+                } else {
+                    document.getElementById('uvStatus').innerHTML =
+                        'UV cao, nên hạn chế ra nắng, đội mũ & bôi kem chống nắng! <span class="sticker">⚠️</span>';
+                }
+            } else {
+                document.getElementById('uvStatus').innerHTML =
+                    'Chờ tia nắng dịu nhẹ... <span class="sticker">🌈</span>';
+            }
+
+            // Reset alert card
+            const alertCard   = document.getElementById('alertCard');
+            const alertValue  = document.getElementById('alertValue');
+            const alertStatus = document.getElementById('alertStatus');
+
+            alertCard.classList.remove('alert', 'warning');
+            alertValue.innerHTML  = 'Hài Hòa <span class="sticker">🌈</span>';
+            alertStatus.innerHTML = 'Rừng xanh đang hát... <span class="sticker">🎶</span>';
+
+            // Alert logic tổng hợp
             let hasAlert = false;
-            let alertType = '';
-            let alertMsg = '';
+            let severity = 'warning'; // 'warning' or 'alert'
+            let messages = [];
 
-            if (data.tempC > 30) {
+            // Temp
+            if (!isNaN(temp) && temp > 30) {
                 hasAlert = true;
-                alertType = 'alert';
-                alertMsg = 'Nóng Bỏng! Rừng đang khát nước... <span class="sticker">💨</span>';
+                severity = 'alert';
+                messages.push('🌡️ Nhiệt độ cao, rừng đang khát nước – nên tưới hoặc làm mát môi trường.');
+            } else if (!isNaN(temp) && temp < 18) {
+                hasAlert = true;
+                if (severity !== 'alert') severity = 'warning';
+                messages.push('🌡️ Nhiệt độ thấp, cây có thể sinh trưởng chậm.');
             }
 
-            if (data.humidity < 30) {
+            // Humidity
+            if (!isNaN(hum) && hum < 30) {
                 hasAlert = true;
-                alertType = 'warning';
-                alertMsg = 'Khô Hạn! Cây cối cần tưới ngay... <span class="sticker">🏜️</span>';
-            } else if (data.humidity > 80) {
+                if (severity !== 'alert') severity = 'warning';
+                messages.push('💧 Độ ẩm thấp, nguy cơ khô hạn – nên tưới bổ sung.');
+            } else if (!isNaN(hum) && hum > 80) {
                 hasAlert = true;
-                alertType = 'warning';
-                alertMsg = 'Ẩm Ướt! Nguy cơ nấm mốc... <span class="sticker">🌫️</span>';
+                if (severity !== 'alert') severity = 'warning';
+                messages.push('💧 Độ ẩm quá cao, dễ phát sinh nấm bệnh – nên tăng thông gió.');
             }
 
-            if (data.lux < 100) {
+            // Lux
+            if (!isNaN(lux) && lux < 100) {
                 hasAlert = true;
-                alertType = 'warning';
-                alertMsg = 'Thiếu Sáng! Cây cần bổ sung ánh sáng... <span class="sticker">🌑</span>';
-            } else if (data.lux > 2000) {
+                if (severity !== 'alert') severity = 'warning';
+                messages.push('💡 Ánh sáng yếu, cây thiếu quang hợp – cân nhắc bổ sung đèn/gần cửa sổ.');
+            } else if (!isNaN(lux) && lux > 2000) {
                 hasAlert = true;
-                alertType = 'alert';
-                alertMsg = 'Quá Sáng! Nguy cơ cháy lá... <span class="sticker">☀️</span>';
+                severity = 'alert';
+                messages.push('💡 Ánh sáng quá mạnh, nguy cơ cháy lá – nên che bớt hoặc di chuyển cây.');
+            }
+
+            // MQ135 – chất lượng không khí
+            if (!isNaN(mqV)) {
+                if (mqV > 2.0) {
+                    hasAlert = true;
+                    severity = 'alert';
+                    messages.push('🌫️ Không khí ô nhiễm (MQ135 cao) – nên đóng cửa, bật lọc không khí hoặc đeo khẩu trang.');
+                } else if (mqV > 1.5) {
+                    hasAlert = true;
+                    if (severity !== 'alert') severity = 'warning';
+                    messages.push('🌫️ Không khí hơi ô nhiễm – nên hạn chế vận động mạnh ngoài trời.');
+                }
+            }
+
+            // UV – tia cực tím
+            if (!isNaN(uvV)) {
+                if (uvV > 0.8) {
+                    hasAlert = true;
+                    severity = 'alert';
+                    messages.push('☀️ Chỉ số UV cao – nên hạn chế ra nắng, đội mũ & bôi kem chống nắng.');
+                } else if (uvV > 0.5) {
+                    hasAlert = true;
+                    if (severity !== 'alert') severity = 'warning';
+                    messages.push('☀️ UV trung bình – nên bảo vệ da nếu ở ngoài trời lâu.');
+                }
             }
 
             if (hasAlert) {
-                document.getElementById('alertCard').classList.add(alertType);
-                document.getElementById('alertValue').innerHTML =
-                    (alertType === 'alert' ? 'Cảnh Báo!' : 'Cảnh Cáo!') + ' <span class="sticker">⚠️</span>';
-                document.getElementById('alertStatus').innerHTML = alertMsg;
+                alertCard.classList.add(severity);
+                alertValue.innerHTML =
+                    (severity === 'alert'
+                        ? 'Cảnh Báo! <span class="sticker">⚠️</span>'
+                        : 'Cảnh Cáo! <span class="sticker">⚠️</span>');
+                alertStatus.innerHTML = messages.join('<br>');
             }
         }
 
@@ -639,7 +755,9 @@
                 timestamp: timestamp,
                 tempC: parseFloat(data.tempC),
                 humidity: parseInt(data.humidity),
-                lux: parseFloat(data.lux)
+                lux: parseFloat(data.lux),
+                mq: parseFloat(data.mq135_v),
+                uv: parseFloat(data.uv_v)
             });
             updateLogTable();
         }
@@ -678,6 +796,20 @@
                 sticker3.className = 'sticker';
                 sticker3.textContent = '💡';
                 cell3.appendChild(sticker3);
+
+                const cell4 = row.insertCell(4);
+                cell4.textContent = isNaN(entry.mq) ? '--' : entry.mq.toFixed(2);
+                const sticker4 = document.createElement('span');
+                sticker4.className = 'sticker';
+                sticker4.textContent = '🌫️';
+                cell4.appendChild(sticker4);
+
+                const cell5 = row.insertCell(5);
+                cell5.textContent = isNaN(entry.uv) ? '--' : entry.uv.toFixed(2);
+                const sticker5 = document.createElement('span');
+                sticker5.className = 'sticker';
+                sticker5.textContent = '🌞';
+                cell5.appendChild(sticker5);
             });
         }
 
@@ -720,6 +852,28 @@
                             pointBackgroundColor: '#c8e6c9',
                             pointBorderColor: '#fff',
                             pointRadius: 6
+                        },
+                        {
+                            label: 'MQ135 (V)',
+                            data: [],
+                            borderColor: '#ffb74d',
+                            backgroundColor: 'rgba(255, 183, 77, 0.2)',
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#ffcc80',
+                            pointBorderColor: '#fff',
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'UV (V)',
+                            data: [],
+                            borderColor: '#ba68c8',
+                            backgroundColor: 'rgba(186, 104, 200, 0.2)',
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#ce93d8',
+                            pointBorderColor: '#fff',
+                            pointRadius: 6
                         }
                     ]
                 },
@@ -751,10 +905,19 @@
 
         function updateChart(data) {
             const timestamp = new Date().toLocaleTimeString('vi-VN');
+            const temp = parseFloat(data.tempC);
+            const hum  = parseFloat(data.humidity);
+            const lux  = parseFloat(data.lux);
+            const mqV  = parseFloat(data.mq135_v);
+            const uvV  = parseFloat(data.uv_v);
+
             chart.data.labels.push(timestamp);
-            chart.data.datasets[0].data.push(parseFloat(data.tempC));
-            chart.data.datasets[1].data.push(parseInt(data.humidity));
-            chart.data.datasets[2].data.push(parseFloat(data.lux));
+            chart.data.datasets[0].data.push(temp);
+            chart.data.datasets[1].data.push(hum);
+            chart.data.datasets[2].data.push(lux);
+            chart.data.datasets[3].data.push(mqV);
+            chart.data.datasets[4].data.push(uvV);
+
             if (chart.data.labels.length > 40) {
                 chart.data.labels.shift();
                 chart.data.datasets.forEach(function(ds) { ds.data.shift(); });
@@ -764,6 +927,8 @@
 
         function updateAIInsights() {
             const recentData = logData.slice(-20);
+            if (recentData.length === 0) return;
+
             const temps = recentData.map(d => d.tempC);
             const hums = recentData.map(d => d.humidity);
             const luxs = recentData.map(d => d.lux);
@@ -834,9 +999,7 @@
                 ? 'Chuẩn bị ô dù! 🌧️ Dự báo mưa cao.'
                 : 'Thời tiết đẹp, dạo chơi rừng nhé! 🌳';
 
-            let detailedAdvice = '';
-            // (giữ nguyên các đoạn detailedAdvice như bản của bạn – mình không cắt bớt logic)
-            // ... để rút gọn câu trả lời, bạn copy lại phần detailedAdvice từ code cũ nếu cần ...
+            const detailedAdvice = '';
 
             document.getElementById('aiContent').innerHTML =
                 '<p><strong>🌿 Tổng Quan AI (20 Mẫu Gần Nhất):</strong> Nhiệt: ' +
@@ -861,10 +1024,14 @@
 
         function exportLog() {
             if (logData.length === 0) return alert('Chưa có hơi thở nào để lưu! 😔');
-            let csv = 'Khoảnh Khắc,Nhiệt Độ (°C),Độ Ẩm (%),Ánh Sáng (lx)\n';
+            let csv = 'Khoảnh Khắc,Nhiệt Độ (°C),Độ Ẩm (%),Ánh Sáng (lx),MQ135 (V),UV (V)\n';
             logData.forEach(function(entry) {
-                csv += '"' + entry.timestamp + '",' + entry.tempC.toFixed(1) + ',' +
-                    entry.humidity + ',' + entry.lux.toFixed(0) + '\n';
+                csv += '"' + entry.timestamp + '",' +
+                    entry.tempC.toFixed(1) + ',' +
+                    entry.humidity + ',' +
+                    entry.lux.toFixed(0) + ',' +
+                    (isNaN(entry.mq) ? '' : entry.mq.toFixed(2)) + ',' +
+                    (isNaN(entry.uv) ? '' : entry.uv.toFixed(2)) + '\n';
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -890,6 +1057,7 @@
             }
         }
 
+        // Mock data nếu không kết nối MQTT
         setTimeout(function() {
             if (!client.connected && !mockInterval) {
                 console.log('MQTT fail - Start mock data');
@@ -899,7 +1067,9 @@
                     const mockData = {
                         tempC: mockTemp,
                         humidity: 55 + Math.random() * 15,
-                        lux: 400 + Math.sin(Date.now() / 120000) * 400
+                        lux: 400 + Math.sin(Date.now() / 120000) * 400,
+                        mq135_v: 0.5 + Math.random() * 1.5,
+                        uv_v: 0.1 + Math.random() * 0.9
                     };
                     updateDashboard(mockData);
                     addToLog(mockData);
